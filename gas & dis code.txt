@@ -1,0 +1,71 @@
+
+#include "FirebaseESP8266.h"
+#include <ESP8266WiFi.h>
+#include <LiquidCrystal.h>
+
+#define FIREBASE_HOST "backpack-9797b.firebaseio.com"
+#define FIREBASE_AUTH "J7NCezTt3A5nZWarte3Q8JxxHStDcxrXmkvfPR2C"
+#define WIFI_SSID "Hansa"
+#define WIFI_PASSWORD "12345678"
+
+int sensorValue;
+
+const int trigPin = 5;  //D1
+const int echoPin = 4;  //D2
+
+long duration;
+int distance;
+
+FirebaseData firebaseData;
+
+void setup()
+{  
+  
+  pinMode(trigPin, OUTPUT); 
+  pinMode(echoPin, INPUT);
+  
+  Serial.begin(115200);
+
+  WiFi.begin(WIFI_SSID, WIFI_PASSWORD);
+  Serial.print("Connecting to Wi-Fi");
+  while (WiFi.status() != WL_CONNECTED)
+  {
+    Serial.print(".");
+    delay(300);
+  }
+  Serial.println();
+  Serial.print("Connected with IP: ");
+  Serial.println(WiFi.localIP());
+  Serial.println();
+
+  Firebase.begin(FIREBASE_HOST, FIREBASE_AUTH);
+
+  Firebase.reconnectWiFi(true);
+ }
+
+void loop()
+{
+  digitalWrite(trigPin, LOW);
+  delayMicroseconds(2);
+    
+  digitalWrite(trigPin, HIGH);
+  delayMicroseconds(10);
+  digitalWrite(trigPin, LOW);
+    
+  duration = pulseIn(echoPin, HIGH);
+  distance= duration*0.034/2;
+    
+  Serial.print("Distance: ");
+  Serial.println(distance);
+    
+  if(Firebase.setInt(firebaseData, "/Distance",distance)){}
+    
+  sensorValue = analogRead(0); 
+    
+  Serial.print("AirQua=");
+  Serial.print(sensorValue);               
+  Serial.println(" PPM");
+  if(Firebase.setInt(firebaseData, "/Gas",sensorValue)){}
+  
+  delay(1000);
+}
